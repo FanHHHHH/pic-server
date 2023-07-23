@@ -1,0 +1,4 @@
+server:
+  host: 9.135.32.20
+  port: 8888
+  uploadDir: static/uploads
