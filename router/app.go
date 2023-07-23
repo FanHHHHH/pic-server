@@ -1,6 +1,7 @@
 package router
 
 import (
+	"pic-server/middleware"
 	"pic-server/service"
 
 	"github.com/gin-gonic/gin"
@@ -10,11 +11,15 @@ import (
 func Router() *gin.Engine {
 	r := gin.Default()
 
+	r.Use(middleware.RateLimit)
 	r.Static("/uploads", viper.GetString("server.uploadDir"))
 
-	r.POST("/upload", service.UploadService)
-	r.GET("/uploadList", service.ListPics)
-	r.GET("/uploadDetail/:filename", service.GetFileDetail)
+	api := r.Group("/api")
+	{
+		api.POST("/upload", service.UploadService)
+		api.GET("/uploadList", service.ListPics)
+		api.GET("/uploadDetail/:filename", service.GetFileDetail)
+	}
 
 	return r
 }
