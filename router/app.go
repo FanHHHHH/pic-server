@@ -13,6 +13,7 @@ func Router() *gin.Engine {
 
 	r.Use(middleware.RateLimit)
 	r.Static("/uploads", viper.GetString("server.uploadDir"))
+	r.Static("/compress_uploads", viper.GetString("server.compressUploadDir"))
 
 	api := r.Group("/api")
 	{
