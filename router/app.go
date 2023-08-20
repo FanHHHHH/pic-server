@@ -15,7 +15,7 @@ func Router() *gin.Engine {
 	r.Static("/uploads", viper.GetString("server.uploadDir"))
 	r.Static("/compress_uploads", viper.GetString("server.compressUploadDir"))
 
-	api := r.Group("/api")
+	api := r.Group("/api").Use(middleware.RemoteAuthz())
 	{
 		api.POST("/upload", service.UploadService)
 		api.GET("/uploadList", service.ListPics)

@@ -2,4 +2,10 @@ server:
   host: 9.135.32.20
   port: 8888
   uploadDir: static/uploads
-  compressUploadDir: static/uploads/small
+  compressUploadDir: static/uploads/small 
+
+auth:
+  host: 127.0.0.1
+  port: 8080
+
+  
