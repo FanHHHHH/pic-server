@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"pic-server/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -62,25 +63,23 @@ func UploadService(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+		utils.SendJsonResponse(c, http.StatusBadRequest, "get form err:"+err.Error(), nil)
 		return
 	}
 
 	dst := filepath.Join(uploadDir, file.Filename)
 	if err := c.SaveUploadedFile(file, dst); err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
+		utils.SendJsonResponse(c, http.StatusBadRequest, "upload file err:"+err.Error(), nil)
 		return
 	}
 
 	if err := compressImage(dst, filepath.Join(compressUploadDir, file.Filename), 400); err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("compress file err: %s", err.Error()))
+		utils.SendJsonResponse(c, http.StatusBadRequest, "compress file err:"+err.Error(), nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"msg":     "文件上传成功",
-		"url":     fmt.Sprintf("http://%s:%s/compress_uploads/%s", host, port, file.Filename),
+	utils.SendJsonResponse(c, http.StatusOK, "success", gin.H{
+		"url": fmt.Sprintf("http://%s:%s/compress_uploads/%s", host, port, file.Filename),
 	})
 }
 
@@ -108,6 +107,34 @@ func GetFileDetail(c *gin.Context) {
 }
 
 func ListPics(c *gin.Context) {
+	_, host, port, compressUploadDir := getServerInfo()
+
+	files, err := ioutil.ReadDir(compressUploadDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "无法读取上传目录",
+		})
+		return
+	}
+
+	images := []gin.H{}
+	for _, file := range files {
+		if !file.IsDir() {
+			images = append(images, gin.H{
+				"name":   file.Name(),
+				"url":    fmt.Sprintf("http://%s:%s/compress_uploads/%s", host, port, file.Name()),
+				"rawUrl": fmt.Sprintf("http://%s:%s/uploads/%s", host, port, file.Name()),
+			})
+		}
+	}
+
+	utils.SendJsonResponse(c, http.StatusOK, "success", gin.H{
+		"images": images,
+	})
+
+}
+
+func ListRawPics(c *gin.Context) {
 	uploadDir, host, port, _ := getServerInfo()
 
 	files, err := ioutil.ReadDir(uploadDir)
@@ -123,13 +150,12 @@ func ListPics(c *gin.Context) {
 		if !file.IsDir() {
 			images = append(images, gin.H{
 				"name": file.Name(),
-				"url":  fmt.Sprintf("http://%s:%s/compress_uploads/%s", host, port, file.Name()),
+				"url":  fmt.Sprintf("http://%s:%s/uploads/%s", host, port, file.Name()),
 			})
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	utils.SendJsonResponse(c, http.StatusOK, "success", gin.H{
 		"images": images,
 	})
-
 }
