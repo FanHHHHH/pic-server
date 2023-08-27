@@ -27,7 +27,7 @@ func RemoteAuthz() gin.HandlerFunc {
 
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
-			utils.SendJsonResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+			utils.SendJsonResponse(c, http.StatusUnauthorized, "Unauthorized; request failed", nil)
 			c.Abort()
 			return
 		}
