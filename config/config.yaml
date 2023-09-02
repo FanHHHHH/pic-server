@@ -8,4 +8,7 @@ auth:
   host: 127.0.0.1
   port: 8080
 
+frontend:
+  url: http://9.135.32.20:3000
+
   

@@ -21,20 +21,24 @@ func RemoteAuthz() gin.HandlerFunc {
 		}
 		// 复制 Authorization 请求头
 		authorization := c.GetHeader("Authorization")
+		cookie := c.GetHeader("Cookie")
 		if authorization != "" {
 			req.Header.Set("Authorization", authorization)
+		}
+		if cookie != "" {
+			req.Header.Set("Cookie", cookie)
 		}
 
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
-			utils.SendJsonResponse(c, http.StatusUnauthorized, "Unauthorized; request failed", nil)
+			utils.SendJsonResponse(c, http.StatusUnauthorized, "Unauthorized; request failed", err.Error())
 			c.Abort()
 			return
 		}
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			utils.SendJsonResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+			utils.SendJsonResponse(c, http.StatusUnauthorized, "Unauthorized", res.Body)
 			c.Abort()
 			return
 		}

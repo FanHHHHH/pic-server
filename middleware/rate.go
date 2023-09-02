@@ -22,7 +22,7 @@ func getVisitor(ip string, filepath string) *rate.Limiter {
 
 	limiter, exists := visitors[id]
 	if !exists {
-		limiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
+		limiter = rate.NewLimiter(rate.Every(30*time.Millisecond), 1)
 		visitors[id] = limiter
 	}
 	return limiter
