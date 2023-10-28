@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -14,11 +15,13 @@ var (
 	mu       sync.Mutex
 )
 
-func getVisitor(ip string, filepath string) *rate.Limiter {
+func getVisitor(ip string, filepath string, fullPath string) *rate.Limiter {
 	mu.Lock()
 	defer mu.Unlock()
 
-	id := ip + filepath
+	id := ip + filepath + fullPath
+
+	fmt.Println(id)
 
 	limiter, exists := visitors[id]
 	if !exists {
@@ -30,7 +33,7 @@ func getVisitor(ip string, filepath string) *rate.Limiter {
 
 func RateLimit(c *gin.Context) {
 
-	limiter := getVisitor(c.ClientIP(), c.Param("filepath"))
+	limiter := getVisitor(c.ClientIP(), c.Param("filepath"), c.FullPath())
 	if !limiter.Allow() {
 		c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 			"error": "rate limit exceeded",
