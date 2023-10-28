@@ -21,6 +21,10 @@ func Router() *gin.Engine {
 		api.GET("/uploadRawList", service.ListRawPics)
 		api.GET("/uploadList", service.ListPics)
 		api.GET("/uploadDetail/:filename", service.GetFileDetail)
+
+		api.DELETE("/delete/:filename", service.DeleteFile)
+		api.GET("/sync", service.Sync)
+
 	}
 
 	return r
