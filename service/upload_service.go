@@ -2,8 +2,6 @@ package service
 
 import (
 	"fmt"
-	"image"
-	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -14,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nfnt/resize"
 	"github.com/spf13/viper"
 )
 
@@ -24,39 +21,6 @@ func getServerInfo() (uploadDir, host, port, compressUploadDir string) {
 	host = viper.GetString("server.host")
 	port = viper.GetString("server.port")
 	return uploadDir, host, port, compressUploadDir
-}
-
-func compressImage(inputFile, outputFile string, newWidth uint) error {
-	// 打开输入文件
-	file, err := os.Open(inputFile)
-	if err != nil {
-		return fmt.Errorf("打开文件失败: %v", err)
-	}
-	defer file.Close()
-
-	// 解码 JPEG 图片
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return fmt.Errorf("解码图片失败: %v", err)
-	}
-
-	// 调整图片大小
-	resizedImg := resize.Resize(newWidth, 0, img, resize.Lanczos3)
-
-	// 打开输出文件
-	out, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("创建输出文件失败: %v", err)
-	}
-	defer out.Close()
-
-	// 以 JPEG 格式编码并保存调整大小后的图片
-	err = jpeg.Encode(out, resizedImg, &jpeg.Options{Quality: 80})
-	if err != nil {
-		return fmt.Errorf("编码输出图片失败: %v", err)
-	}
-
-	return nil
 }
 
 func UploadService(c *gin.Context) {
@@ -69,19 +33,32 @@ func UploadService(c *gin.Context) {
 		return
 	}
 
-	dst := filepath.Join(uploadDir, file.Filename)
+	fullFilename := file.Filename
+	dst := filepath.Join(uploadDir, fullFilename)
+
+	//检查是否重名
+	if service_utils.FileExists(dst) {
+		ext := filepath.Ext(file.Filename)
+		filename := file.Filename[0 : len(file.Filename)-len(ext)]
+
+		fullFilename = filename + "_" + time.Now().Format("20060102150405") + filepath.Ext(file.Filename)
+		dst = filepath.Join(uploadDir, fullFilename)
+	}
+
 	if err := c.SaveUploadedFile(file, dst); err != nil {
 		utils.SendJsonResponse(c, http.StatusBadRequest, "upload file err:"+err.Error(), nil)
 		return
 	}
 
-	if err := compressImage(dst, filepath.Join(compressUploadDir, file.Filename), 400); err != nil {
+	if err := service_utils.CompressImage(dst, filepath.Join(compressUploadDir, fullFilename), 400); err != nil {
 		utils.SendJsonResponse(c, http.StatusBadRequest, "compress file err:"+err.Error(), nil)
 		return
 	}
 
 	utils.SendJsonResponse(c, http.StatusOK, "success", gin.H{
-		"url": fmt.Sprintf("http://%s:%s/compress_uploads/%s", host, port, file.Filename),
+		"name":   fullFilename,
+		"url":    fmt.Sprintf("http://%s:%s/compress_uploads/%s", host, port, file.Filename),
+		"rawUrl": fmt.Sprintf("http://%s:%s/uploads/%s", host, port, file.Filename),
 	})
 }
 
